@@ -59,6 +59,7 @@ export function useAppState() {
       ...txn,
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
+      orderStatus: txn.type === "income" && txn.items && txn.items.length > 0 ? "pending" : undefined,
     };
     setTransactions((prev) => {
       const updated = [newTxn, ...prev];
@@ -67,7 +68,15 @@ export function useAppState() {
     });
   }, []);
 
-  return { transactions, addTransaction, saveTransactions };
+  const updateOrderStatus = useCallback((id: string, status: OrderStatus) => {
+    setTransactions((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, orderStatus: status } : t));
+      localStorage.setItem("tea-transactions", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  return { transactions, addTransaction, saveTransactions, updateOrderStatus };
 }
 
 export function formatVND(amount: number): string {
