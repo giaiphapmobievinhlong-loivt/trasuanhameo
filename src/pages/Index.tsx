@@ -7,7 +7,7 @@ import PaymentModal from "@/components/PaymentModal";
 import ExpenseModal from "@/components/ExpenseModal";
 import ReportView from "@/components/ReportView";
 import OrderList from "@/components/OrderList";
-import { CupSoda, BarChart3, PlusCircle, ClipboardList } from "lucide-react";
+import { CupSoda, BarChart3, PlusCircle, ClipboardList, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 type Tab = "pos" | "orders" | "report";
