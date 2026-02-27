@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { MenuItem, CartItem, OrderStatus, useAppState, formatVND } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
 import MenuGrid from "@/components/MenuGrid";
 import Cart from "@/components/Cart";
 import PaymentModal from "@/components/PaymentModal";
