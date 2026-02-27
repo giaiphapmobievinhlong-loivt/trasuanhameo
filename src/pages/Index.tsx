@@ -19,6 +19,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 const Index = () => {
+  const { signOut } = useAuth();
   const { transactions, addTransaction, updateOrderStatus } = useAppState();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showPayment, setShowPayment] = useState(false);
