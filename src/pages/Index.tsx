@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { MenuItem, CartItem, OrderStatus, useAppState, formatVND } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
 import MenuGrid from "@/components/MenuGrid";
 import Cart from "@/components/Cart";
 import PaymentModal from "@/components/PaymentModal";
 import ExpenseModal from "@/components/ExpenseModal";
 import ReportView from "@/components/ReportView";
 import OrderList from "@/components/OrderList";
-import { CupSoda, BarChart3, PlusCircle, ClipboardList } from "lucide-react";
+import { CupSoda, BarChart3, PlusCircle, ClipboardList, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 type Tab = "pos" | "orders" | "report";
@@ -18,6 +19,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 const Index = () => {
+  const { signOut } = useAuth();
   const { transactions, addTransaction, updateOrderStatus } = useAppState();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showPayment, setShowPayment] = useState(false);
@@ -117,13 +119,22 @@ const Index = () => {
           ))}
         </div>
 
-        <button
-          onClick={() => setShowExpense(true)}
-          className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-secondary text-secondary-foreground text-xs sm:text-sm font-bold hover:bg-secondary/80 transition-colors shrink-0"
-        >
-          <PlusCircle size={14} className="sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Thu/Chi</span>
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setShowExpense(true)}
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-secondary text-secondary-foreground text-xs sm:text-sm font-bold hover:bg-secondary/80 transition-colors"
+          >
+            <PlusCircle size={14} className="sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Thu/Chi</span>
+          </button>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-destructive/10 text-destructive text-xs sm:text-sm font-bold hover:bg-destructive/20 transition-colors"
+            title="Đăng xuất"
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
       </header>
 
       {/* Content */}

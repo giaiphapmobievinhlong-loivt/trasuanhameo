@@ -1,4 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface MenuItem {
   id: string;
@@ -43,40 +46,97 @@ export const MENU_ITEMS: MenuItem[] = [
 
 export const CATEGORIES = ["Tất cả", "Trà sữa", "Trà trái cây", "Topping"];
 
+// Convert DB row to Transaction
+function rowToTransaction(row: any): Transaction {
+  const items = row.items as CartItem[] | null;
+  return {
+    id: row.id,
+    type: row.type as "income" | "expense",
+    items: items ?? undefined,
+    amount: row.amount,
+    description: row.description,
+    date: row.created_at,
+    paymentReceived: row.payment_received ?? undefined,
+    changeGiven: row.change_given ?? undefined,
+    orderStatus: (row.order_status as OrderStatus) ?? undefined,
+  };
+}
+
 export function useAppState() {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem("tea-transactions");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const saveTransactions = useCallback((txns: Transaction[]) => {
-    setTransactions(txns);
-    localStorage.setItem("tea-transactions", JSON.stringify(txns));
-  }, []);
+  // Fetch transactions from DB
+  const fetchTransactions = useCallback(async () => {
+    if (!user) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  const addTransaction = useCallback((txn: Omit<Transaction, "id" | "date">) => {
-    const newTxn: Transaction = {
-      ...txn,
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      orderStatus: txn.type === "income" && txn.items && txn.items.length > 0 ? "pending" : undefined,
-    };
-    setTransactions((prev) => {
-      const updated = [newTxn, ...prev];
-      localStorage.setItem("tea-transactions", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+    if (!error && data) {
+      setTransactions(data.map(rowToTransaction));
+    }
+    setLoading(false);
+  }, [user]);
 
-  const updateOrderStatus = useCallback((id: string, status: OrderStatus) => {
-    setTransactions((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, orderStatus: status } : t));
-      localStorage.setItem("tea-transactions", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
-  return { transactions, addTransaction, saveTransactions, updateOrderStatus };
+  const addTransaction = useCallback(
+    async (txn: Omit<Transaction, "id" | "date">) => {
+      if (!user) return;
+
+      const orderStatus =
+        txn.type === "income" && txn.items && txn.items.length > 0
+          ? "pending"
+          : undefined;
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: user.id,
+          type: txn.type,
+          items: (txn.items as unknown as Json) ?? null,
+          amount: txn.amount,
+          description: txn.description,
+          payment_received: txn.paymentReceived ?? null,
+          change_given: txn.changeGiven ?? null,
+          order_status: orderStatus ?? null,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setTransactions((prev) => [rowToTransaction(data), ...prev]);
+      }
+    },
+    [user]
+  );
+
+  const updateOrderStatus = useCallback(
+    async (id: string, status: OrderStatus) => {
+      const { error } = await supabase
+        .from("transactions")
+        .update({ order_status: status })
+        .eq("id", id);
+
+      if (!error) {
+        setTransactions((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, orderStatus: status } : t))
+        );
+      }
+    },
+    []
+  );
+
+  return { transactions, addTransaction, updateOrderStatus, loading };
 }
 
 export function formatVND(amount: number): string {
