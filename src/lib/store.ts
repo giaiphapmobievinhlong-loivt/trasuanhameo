@@ -12,6 +12,8 @@ export interface CartItem extends MenuItem {
   quantity: number;
 }
 
+export type OrderStatus = "pending" | "preparing" | "ready" | "completed" | "cancelled";
+
 export interface Transaction {
   id: string;
   type: "income" | "expense";
@@ -21,6 +23,7 @@ export interface Transaction {
   date: string;
   paymentReceived?: number;
   changeGiven?: number;
+  orderStatus?: OrderStatus;
 }
 
 export const MENU_ITEMS: MenuItem[] = [
